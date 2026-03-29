@@ -189,6 +189,7 @@ export default function Home() {
   };
 
   const isTom = currentDate === getTomorrow();
+  const isPast = currentDate < new Date().toISOString().split("T")[0];
   const done = dayPlan.tasks.filter(t => t.completed).length;
   const total = dayPlan.tasks.length;
   const pct = total > 0 ? (done / total) * 100 : 0;
@@ -271,16 +272,18 @@ export default function Home() {
 
           <NotificationBanner />
 
-          {/* Smart Input */}
-          <div className="mb-4">
-            <SmartInput date={currentDate} onTaskCreated={smartAdd} />
-          </div>
+          {/* Smart Input — only for today and future */}
+          {!isPast && (
+            <div className="mb-4">
+              <SmartInput date={currentDate} onTaskCreated={smartAdd} />
+            </div>
+          )}
 
           {/* Divider */}
           <div style={{ height: "1px", background: "var(--border-light)", margin: "0 0 12px" }} />
 
-          {/* Form */}
-          {showForm ? (
+          {/* Form — only for today and future */}
+          {!isPast && (showForm ? (
             <div className="mb-4">
               <TaskForm date={currentDate} editingTask={editingTask} onSave={addT}
                 onCancel={() => { setShowForm(false); setEditingTask(null); }} />
@@ -293,7 +296,7 @@ export default function Home() {
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
               <PlusIcon size={14} /> {t("addTask")}
             </button>
-          )}
+          ))}
 
           {/* Tasks */}
           <div>
