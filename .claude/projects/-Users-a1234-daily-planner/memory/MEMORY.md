@@ -1,0 +1,1 @@
+- [Design snapshot v1](design_snapshot_v1.md) — Warm cream/purple palette before Supabase colors experiment, rollback point
