@@ -25,8 +25,12 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemP
   const done = task.completed;
   const overdue = !done && (() => {
     const now = new Date();
-    const [h, m] = task.endTime.split(":").map(Number);
-    const end = new Date(); end.setHours(h, m, 0);
+    const [sh, sm] = task.startTime.split(":").map(Number);
+    const [eh, em] = task.endTime.split(":").map(Number);
+    const end = new Date();
+    end.setHours(eh, em, 0);
+    // If endTime <= startTime, task spans midnight — not overdue until next day
+    if (eh * 60 + em <= sh * 60 + sm) return false;
     return now > end;
   })();
 
