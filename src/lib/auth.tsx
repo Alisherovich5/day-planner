@@ -10,16 +10,12 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string, name: string) => Promise<string | null>;
-  signInWithPhone: (phone: string) => Promise<string | null>;
-  verifyOtp: (phone: string, token: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null, session: null, loading: true,
-  signIn: async () => null, signUp: async () => null,
-  signInWithPhone: async () => null, verifyOtp: async () => null,
-  signOut: async () => {},
+  signIn: async () => null, signUp: async () => null, signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -47,20 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? error.message : null;
   };
 
-  const signInWithPhone = async (phone: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return error ? error.message : null;
-  };
-
-  const verifyOtp = async (phone: string, token: string): Promise<string | null> => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
-    return error ? error.message : null;
-  };
-
   const signOut = async () => { await supabase.auth.signOut(); };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInWithPhone, verifyOtp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

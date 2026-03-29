@@ -13,7 +13,7 @@ interface LangContextType {
 const translations: Record<Lang, Record<string, string>> = {
   uz: {
     // Auth
-    brand: "Flowday", sub: "Har kuningiz oqib ketsin",
+    brand: "Flowday", sub: "Kuningizni rejalashtiring",
     login: "Kirish", register: "Ro'yxatdan o'tish",
     name: "Ismingiz", email: "Email", password: "Parol",
     phoneNum: "+998 88 665 43 34", code: "SMS kod",
@@ -58,7 +58,7 @@ const translations: Record<Lang, Record<string, string>> = {
     language: "Til",
   },
   ru: {
-    brand: "Flowday", sub: "Пусть каждый день течёт",
+    brand: "Flowday", sub: "Планируйте свой день",
     login: "Войти", register: "Регистрация",
     name: "Ваше имя", email: "Email", password: "Пароль",
     phoneNum: "+998 88 665 43 34", code: "SMS код",
@@ -91,7 +91,7 @@ const translations: Record<Lang, Record<string, string>> = {
     allowBtn: "Разрешить", language: "Язык",
   },
   en: {
-    brand: "Flowday", sub: "Let your day flow",
+    brand: "Flowday", sub: "Plan your day with ease",
     login: "Sign in", register: "Sign up",
     name: "Your name", email: "Email", password: "Password",
     phoneNum: "+998 88 665 43 34", code: "SMS code",
