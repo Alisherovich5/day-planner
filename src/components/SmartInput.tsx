@@ -43,33 +43,74 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
     setText(""); setPreview(null); setLoading(false);
   };
 
+  const wantListenRef = useRef(false);
+  const lastRestartRef = useRef(0);
+
   const toggleVoice = () => {
     warmUpAudio();
     if (listening) {
+      wantListenRef.current = false;
       recRef.current?.stop();
       recRef.current = null;
       setListening(false);
       return;
     }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
-    const r = new SR();
-    r.lang = "ru-RU";
-    r.interimResults = true;
-    r.continuous = true;
+    wantListenRef.current = true;
 
-    r.onresult = (e: SpeechRecognitionEvent) => {
-      let t = "";
-      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-      setText(t);
+    const start = () => {
+      if (!wantListenRef.current) return;
+
+      const r = new SR();
+      r.lang = "ru-RU";
+      r.interimResults = true;
+      r.continuous = true;
+
+      r.onresult = (e: SpeechRecognitionEvent) => {
+        let t = "";
+        for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+        setText(t);
+      };
+
+      r.onend = () => {
+        // Brauzer o'chirdi — qayta boshlash (loop himoyasi bilan)
+        if (wantListenRef.current) {
+          const now = Date.now();
+          const gap = now - lastRestartRef.current;
+          // 500ms dan tez restart bo'lsa — loop, to'xtatamiz
+          if (gap < 500) {
+            wantListenRef.current = false;
+            setListening(false);
+            recRef.current = null;
+            return;
+          }
+          lastRestartRef.current = now;
+          setTimeout(() => start(), 200);
+        } else {
+          setListening(false);
+          recRef.current = null;
+        }
+      };
+
+      r.onerror = () => {
+        if (wantListenRef.current) {
+          setTimeout(() => start(), 500);
+        } else {
+          setListening(false);
+          recRef.current = null;
+        }
+      };
+
+      recRef.current = r;
+      try { r.start(); } catch { setListening(false); wantListenRef.current = false; }
     };
 
-    r.onend = () => { setListening(false); recRef.current = null; };
-    r.onerror = () => { setListening(false); recRef.current = null; };
-
-    recRef.current = r;
-    try { r.start(); setListening(true); } catch { setListening(false); }
+    lastRestartRef.current = Date.now();
+    start();
+    setListening(true);
   };
 
   const active = focused || listening;

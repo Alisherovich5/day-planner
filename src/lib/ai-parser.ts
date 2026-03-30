@@ -56,15 +56,19 @@ function normalizeNumbers(text: string): string {
   result = result.replace(/через\s*час/gi, "1 soatdan keyin");
   // Russian: "через полчаса" → "yarim soatdan keyin"
   result = result.replace(/через\s*полчаса/gi, "yarim soatdan keyin");
-  // Russian: "закончится/кончится в 9" → "gacha 9"
-  result = result.replace(/(?:закончи\w*|кончи\w*|до)\s*(?:в\s*)?(\d{1,2}:\d{2})/gi, "gacha $1");
-  result = result.replace(/(?:закончи\w*|кончи\w*|до)\s*(?:в\s*)?(\d{1,2})/gi, "gacha $1");
-  // Russian: "с 7 до 9" → "7 dan 9 gacha"
-  result = result.replace(/с\s*(\d{1,2}(?::\d{2})?)\s*до\s*(\d{1,2}(?::\d{2})?)/gi, "$1 dan $2 gacha");
-  // Russian priority: "важно/срочно" → muhim
+  // Russian: "с 7 до 9" / "с 7:30 до 9:11" → range (MUST be before single patterns)
+  result = result.replace(/с\s*(\d{1,2}:\d{2})\s*до\s*(\d{1,2}:\d{2})/gi, "$1-$2");
+  result = result.replace(/с\s*(\d{1,2})\s*до\s*(\d{1,2})/gi, "$1 dan $2 gacha");
+  // Russian: "закончится в 9:11" / "кончится в 9" → endTime
+  result = result.replace(/(?:закончи\w*|кончи\w*|продли\w*)\s*(?:в\s*)?(\d{1,2}:\d{2})/gi, "gacha $1");
+  result = result.replace(/(?:закончи\w*|кончи\w*|продли\w*)\s*(?:в\s*)?(\d{1,2})/gi, "gacha $1");
+  // Russian: "до 9" (standalone, not part of "с...до") → endTime
+  result = result.replace(/\bдо\s*(\d{1,2}:\d{2})/gi, "gacha $1");
+  result = result.replace(/\bдо\s*(\d{1,2})\b/gi, "gacha $1");
+  // Russian priority
   result = result.replace(/\b(важно|срочно|важная|срочная)\b/gi, "muhim");
   // Russian noise words
-  result = result.replace(/\b(сегодня|у нас|есть|и|что)\b/gi, "");
+  result = result.replace(/\b(сегодня|у нас|есть)\b/gi, "");
 
   // English: "at 7:00 o'clock" / "at 7 o'clock" / "at 7" → "7 da" or "7:00 da"
   result = result.replace(/at\s*(\d{1,2}:\d{2})\s*(?:o'?clock)?/gi, "$1 da");
