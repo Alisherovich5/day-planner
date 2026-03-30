@@ -37,7 +37,7 @@ export default function AuthPage() {
     setLoading(false);
   };
 
-  const inp = "w-full text-[14px] rounded-lg px-3 py-2.5 outline-none";
+  const inp = "w-full text-[14px] rounded-lg px-4 py-2.5 outline-none";
   const inpS = { background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text)" };
 
   return (
