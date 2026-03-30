@@ -43,19 +43,58 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
     setText(""); setPreview(null); setLoading(false);
   };
 
+  const stopRef = useRef(false);
+
   const toggleVoice = () => {
     warmUpAudio();
-    if (listening) { recRef.current?.stop(); recRef.current = null; setListening(false); return; }
+    if (listening) {
+      stopRef.current = true;
+      recRef.current?.stop();
+      recRef.current = null;
+      setListening(false);
+      return;
+    }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
-    const r = new SR(); r.lang = "ru-RU"; r.interimResults = true; r.continuous = false;
-    r.onresult = (e: SpeechRecognitionEvent) => {
-      let t = ""; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; setText(t);
+
+    stopRef.current = false;
+
+    const startRec = () => {
+      const r = new SR();
+      r.lang = "ru-RU";
+      r.interimResults = true;
+      r.continuous = true;
+
+      r.onresult = (e: SpeechRecognitionEvent) => {
+        let t = "";
+        for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+        setText(t);
+      };
+
+      // Auto-restart when browser stops (keeps listening until user stops)
+      r.onend = () => {
+        if (!stopRef.current) {
+          try { r.start(); } catch { setListening(false); recRef.current = null; }
+        } else {
+          setListening(false);
+          recRef.current = null;
+        }
+      };
+
+      r.onerror = () => {
+        if (!stopRef.current) {
+          try { r.start(); } catch { setListening(false); recRef.current = null; }
+        } else {
+          setListening(false);
+          recRef.current = null;
+        }
+      };
+
+      recRef.current = r;
+      try { r.start(); setListening(true); } catch { setListening(false); }
     };
-    r.onend = () => { setListening(false); recRef.current = null; };
-    r.onerror = () => { setListening(false); recRef.current = null; };
-    recRef.current = r;
-    try { r.start(); setListening(true); } catch { setListening(false); }
+
+    startRec();
   };
 
   const active = focused || listening;
