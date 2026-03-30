@@ -44,6 +44,7 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
   };
 
   const stopRef = useRef(false);
+  const textRef = useRef("");
 
   const toggleVoice = () => {
     warmUpAudio();
@@ -58,43 +59,65 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
     if (!SR) return;
 
     stopRef.current = false;
+    textRef.current = "";
 
-    const startRec = () => {
+    const createRec = () => {
       const r = new SR();
       r.lang = "ru-RU";
       r.interimResults = true;
       r.continuous = true;
 
       r.onresult = (e: SpeechRecognitionEvent) => {
-        let t = "";
-        for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-        setText(t);
+        let final = "";
+        let interim = "";
+        for (let i = 0; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final += t;
+          else interim += t;
+        }
+        if (final) textRef.current = final;
+        setText(textRef.current + interim);
       };
 
-      // Auto-restart when browser stops (keeps listening until user stops)
       r.onend = () => {
         if (!stopRef.current) {
-          try { r.start(); } catch { setListening(false); recRef.current = null; }
+          // Brauzer o'chirdi — yangi instance bilan qayta boshlash
+          setTimeout(() => {
+            if (!stopRef.current) {
+              const newR = createRec();
+              recRef.current = newR;
+              try { newR.start(); } catch { setListening(false); }
+            }
+          }, 100);
         } else {
           setListening(false);
           recRef.current = null;
         }
       };
 
-      r.onerror = () => {
-        if (!stopRef.current) {
-          try { r.start(); } catch { setListening(false); recRef.current = null; }
-        } else {
+      r.onerror = (ev: Event) => {
+        const err = ev as ErrorEvent;
+        // "no-speech" xatosida qayta urinish
+        if (!stopRef.current && err.message !== "aborted") {
+          setTimeout(() => {
+            if (!stopRef.current) {
+              const newR = createRec();
+              recRef.current = newR;
+              try { newR.start(); } catch { setListening(false); }
+            }
+          }, 300);
+        } else if (stopRef.current) {
           setListening(false);
           recRef.current = null;
         }
       };
 
-      recRef.current = r;
-      try { r.start(); setListening(true); } catch { setListening(false); }
+      return r;
     };
 
-    startRec();
+    const r = createRec();
+    recRef.current = r;
+    try { r.start(); setListening(true); } catch { setListening(false); }
   };
 
   const active = focused || listening;
