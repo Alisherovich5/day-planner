@@ -40,7 +40,7 @@ function formatCopyText(plan: DayPlan): string {
   const pct = Math.round((done / total) * 100);
 
   const lines = plan.tasks.map((t) => {
-    const check = t.completed ? "\u2705" : "\u2B1C";
+    const check = t.completed ? "[\u2705]" : "[ ]";
     return `${check} ${t.startTime}\u2013${t.endTime}  ${t.title}`;
   });
 
