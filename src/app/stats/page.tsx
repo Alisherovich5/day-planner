@@ -6,8 +6,10 @@ import { getWeeklyStatsAsync, WeeklyStats } from "@/lib/analytics";
 import AuthPage from "@/components/AuthPage";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, BarChartIcon, CheckIcon, TrendingUpIcon, CalendarIcon, TargetIcon } from "@/components/Icons";
+import { useLang } from "@/lib/lang";
 
 export default function StatsRoute() {
+  const { t } = useLang();
   const { user, loading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<WeeklyStats | null>(null);
@@ -35,32 +37,32 @@ export default function StatsRoute() {
           style={{ color: "var(--text-2)" }}
           onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.background = "var(--accent-light)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-2)"; e.currentTarget.style.background = "transparent"; }}>
-          <ChevronLeftIcon size={16} /> Ortga
+          <ChevronLeftIcon size={16} /> {t("back")}
         </button>
 
         <h1 className="text-[20px] font-bold mb-6 flex items-center gap-2" style={{ color: "var(--text)" }}>
-          <TrendingUpIcon size={20} /> Haftalik statistika
+          <TrendingUpIcon size={20} /> {t("stats")}
         </h1>
 
         {!stats || stats.totalTasks === 0 ? (
           <div className="text-center py-16">
-            <p className="text-[14px]" style={{ color: "var(--text-2)" }}>Hafta davomida tasklar topilmadi</p>
-            <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>Task qo&apos;shib boshlang</p>
+            <p className="text-[14px]" style={{ color: "var(--text-2)" }}>{t("noStats")}</p>
+            <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>{t("noTasksSub")}</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <Stat icon={<CalendarIcon size={12} />} label="Jami" value={String(stats.totalTasks)} />
-              <Stat icon={<CheckIcon size={12} />} label="Bajarildi" value={String(stats.totalCompleted)} color="var(--green)" />
-              <Stat icon={<TrendingUpIcon size={12} />} label="Samaradorlik" value={`${stats.overallRate}%`} color="var(--accent)" />
-              <Stat icon={<BarChartIcon size={12} />} label="O'rtacha/kun" value={String(stats.avgTasksPerDay)} />
+              <Stat icon={<CalendarIcon size={12} />} label={t("total")} value={String(stats.totalTasks)} />
+              <Stat icon={<CheckIcon size={12} />} label={t("done")} value={String(stats.totalCompleted)} color="var(--green)" />
+              <Stat icon={<TrendingUpIcon size={12} />} label={t("efficiency")} value={`${stats.overallRate}%`} color="var(--accent)" />
+              <Stat icon={<BarChartIcon size={12} />} label={t("avgDay")} value={String(stats.avgTasksPerDay)} />
             </div>
 
             {/* Bar chart */}
             <div>
               <p className="text-[12px] font-semibold mb-3 flex items-center gap-1.5" style={{ color: "var(--text-2)" }}>
-                <BarChartIcon size={13} /> Kunlik ko&apos;rsatkich
+                <BarChartIcon size={13} /> {t("daily")}
               </p>
               <div className="flex items-end gap-2" style={{ height: "120px" }}>
                 {stats.days.map((day) => {
@@ -93,14 +95,14 @@ export default function StatsRoute() {
               <div className="grid grid-cols-2 gap-2">
                 {stats.bestDay && (
                   <div className="rounded-lg p-3" style={{ background: "var(--green-light)", border: "1px solid var(--border)" }}>
-                    <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: "var(--green)" }}>Eng yaxshi</p>
+                    <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: "var(--green)" }}>{t("best")}</p>
                     <p className="text-[14px] font-medium" style={{ color: "var(--text)" }}>{stats.bestDay.dayName}</p>
                     <p className="text-[12px]" style={{ color: "var(--text-2)" }}>{stats.bestDay.rate}%</p>
                   </div>
                 )}
                 {stats.worstDay && stats.worstDay.date !== stats.bestDay?.date && (
                   <div className="rounded-lg p-3" style={{ background: "var(--red-light)", border: "1px solid var(--border)" }}>
-                    <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: "var(--red)" }}>Eng past</p>
+                    <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: "var(--red)" }}>{t("worst")}</p>
                     <p className="text-[14px] font-medium" style={{ color: "var(--text)" }}>{stats.worstDay.dayName}</p>
                     <p className="text-[12px]" style={{ color: "var(--text-2)" }}>{stats.worstDay.rate}%</p>
                   </div>
@@ -111,7 +113,7 @@ export default function StatsRoute() {
             {/* Priority breakdown */}
             <div>
               <p className="text-[12px] font-semibold mb-2 flex items-center gap-1.5" style={{ color: "var(--text-2)" }}>
-                <TargetIcon size={13} /> Muhimlik taqsimoti
+                <TargetIcon size={13} /> {t("priority")}
               </p>
               <div className="flex gap-0.5 rounded-md overflow-hidden" style={{ height: "8px" }}>
                 {stats.priorityBreakdown.high > 0 && <div style={{ width: `${(stats.priorityBreakdown.high/stats.totalTasks)*100}%`, background: "var(--red)" }} />}
@@ -119,9 +121,9 @@ export default function StatsRoute() {
                 {stats.priorityBreakdown.low > 0 && <div style={{ width: `${(stats.priorityBreakdown.low/stats.totalTasks)*100}%`, background: "var(--blue)" }} />}
               </div>
               <div className="flex gap-4 mt-2">
-                <Leg c="var(--red)" l="Yuqori" n={stats.priorityBreakdown.high} />
-                <Leg c="var(--amber)" l="O'rta" n={stats.priorityBreakdown.medium} />
-                <Leg c="var(--blue)" l="Past" n={stats.priorityBreakdown.low} />
+                <Leg c="var(--red)" l={t("high")} n={stats.priorityBreakdown.high} />
+                <Leg c="var(--amber)" l={t("medium")} n={stats.priorityBreakdown.medium} />
+                <Leg c="var(--blue)" l={t("low")} n={stats.priorityBreakdown.low} />
               </div>
             </div>
 
@@ -129,7 +131,7 @@ export default function StatsRoute() {
             {stats.streak > 0 && (
               <div className="flex items-center justify-center gap-2 py-3 rounded-lg" style={{ background: "var(--accent-light)", border: "1px solid var(--border)" }}>
                 <span className="text-[22px] font-bold" style={{ color: "var(--accent)" }}>{stats.streak}</span>
-                <span className="text-[13px]" style={{ color: "var(--text-2)" }}>kun ketma-ket 100%</span>
+                <span className="text-[13px]" style={{ color: "var(--text-2)" }}>{t("streak")}</span>
               </div>
             )}
           </div>

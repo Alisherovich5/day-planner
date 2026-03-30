@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { getWeeklyStatsAsync, WeeklyStats } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth";
+import { useLang } from "@/lib/lang";
 import { TrendingUpIcon, XIcon, BarChartIcon, CalendarIcon, TargetIcon, CheckIcon } from "./Icons";
 
 interface WeeklyAnalyticsProps { onClose: () => void; onSelectDate: (d: string) => void; }
 
 export default function WeeklyAnalytics({ onClose, onSelectDate }: WeeklyAnalyticsProps) {
   const { user } = useAuth();
+  const { t } = useLang();
   const [stats, setStats] = useState<WeeklyStats | null>(null);
   useEffect(() => { if (user) getWeeklyStatsAsync(user.id).then(setStats); }, [user]);
   if (!stats) return null;
@@ -31,10 +33,10 @@ export default function WeeklyAnalytics({ onClose, onSelectDate }: WeeklyAnalyti
 
         <div className="p-4 sm:p-5 space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <StatCard label="Jami" value={String(stats.totalTasks)} />
-            <StatCard label="Bajarildi" value={String(stats.totalCompleted)} color="var(--green)" />
-            <StatCard label="Samaradorlik" value={`${stats.overallRate}%`} color="var(--accent)" />
-            <StatCard label="O'rtacha/kun" value={String(stats.avgTasksPerDay)} />
+            <StatCard label={t("total")} value={String(stats.totalTasks)} />
+            <StatCard label={t("done")} value={String(stats.totalCompleted)} color="var(--green)" />
+            <StatCard label={t("efficiency")} value={`${stats.overallRate}%`} color="var(--accent)" />
+            <StatCard label={t("avgDay")} value={String(stats.avgTasksPerDay)} />
           </div>
 
           <div>
@@ -101,9 +103,9 @@ export default function WeeklyAnalytics({ onClose, onSelectDate }: WeeklyAnalyti
                 {stats.priorityBreakdown.low > 0 && <div style={{ width: `${(stats.priorityBreakdown.low/stats.totalTasks)*100}%`, background: "var(--blue)" }} />}
               </div>
               <div className="flex gap-4 mt-2">
-                <Leg c="var(--red)" l="Yuqori" n={stats.priorityBreakdown.high} />
-                <Leg c="var(--amber)" l="O'rta" n={stats.priorityBreakdown.medium} />
-                <Leg c="var(--blue)" l="Past" n={stats.priorityBreakdown.low} />
+                <Leg c="var(--red)" l={t("high")} n={stats.priorityBreakdown.high} />
+                <Leg c="var(--amber)" l={t("medium")} n={stats.priorityBreakdown.medium} />
+                <Leg c="var(--blue)" l={t("low")} n={stats.priorityBreakdown.low} />
               </div>
             </div>
           )}

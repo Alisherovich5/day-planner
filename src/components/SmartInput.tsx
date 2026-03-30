@@ -10,8 +10,10 @@ import { MicIcon, SendIcon, StopCircleIcon, SparkleIcon, ClockIcon } from "./Ico
 
 interface SmartInputProps { date: string; onTaskCreated: (task: Task) => void; }
 
+const voiceLangs: Record<string, string> = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
+
 export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -65,7 +67,7 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
       if (!wantListenRef.current) return;
 
       const r = new SR();
-      r.lang = "ru-RU";
+      r.lang = voiceLangs[lang] || "ru-RU";
       r.interimResults = true;
       r.continuous = true;
 
