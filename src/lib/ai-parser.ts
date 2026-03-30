@@ -56,8 +56,15 @@ function normalizeNumbers(text: string): string {
   result = result.replace(/через\s*час/gi, "1 soatdan keyin");
   // Russian: "через полчаса" → "yarim soatdan keyin"
   result = result.replace(/через\s*полчаса/gi, "yarim soatdan keyin");
+  // Russian: "закончится/кончится в 9" → "gacha 9"
+  result = result.replace(/(?:закончи\w*|кончи\w*|до)\s*(?:в\s*)?(\d{1,2}:\d{2})/gi, "gacha $1");
+  result = result.replace(/(?:закончи\w*|кончи\w*|до)\s*(?:в\s*)?(\d{1,2})/gi, "gacha $1");
+  // Russian: "с 7 до 9" → "7 dan 9 gacha"
+  result = result.replace(/с\s*(\d{1,2}(?::\d{2})?)\s*до\s*(\d{1,2}(?::\d{2})?)/gi, "$1 dan $2 gacha");
   // Russian priority: "важно/срочно" → muhim
   result = result.replace(/\b(важно|срочно|важная|срочная)\b/gi, "muhim");
+  // Russian noise words
+  result = result.replace(/\b(сегодня|у нас|есть|и|что)\b/gi, "");
 
   // English: "at 7:00 o'clock" / "at 7 o'clock" / "at 7" → "7 da" or "7:00 da"
   result = result.replace(/at\s*(\d{1,2}:\d{2})\s*(?:o'?clock)?/gi, "$1 da");
@@ -300,12 +307,20 @@ export function parseTaskFromText(rawText: string, date: string): Task {
 
   // ── "gacha X" — set endTime from leftover "gacha 9" ──
   if (timeFound) {
-    const gachaMatch = title.match(/gacha\s*(\d{1,2})/i);
-    if (gachaMatch) {
-      const eh = parseInt(gachaMatch[1]);
-      endH = eh < 7 ? smartHour(eh) : eh;
-      endM = 0;
-      title = title.replace(gachaMatch[0], "");
+    // "gacha 9:11" or "gacha 9"
+    const gachaFull = title.match(/gacha\s*(\d{1,2}):(\d{2})/i);
+    if (gachaFull) {
+      endH = clamp(parseInt(gachaFull[1]), 0, 23);
+      endM = clamp(parseInt(gachaFull[2]), 0, 59);
+      title = title.replace(gachaFull[0], "");
+    } else {
+      const gachaSimple = title.match(/gacha\s*(\d{1,2})/i);
+      if (gachaSimple) {
+        const eh = parseInt(gachaSimple[1]);
+        endH = eh < 7 ? smartHour(eh) : eh;
+        endM = 0;
+        title = title.replace(gachaSimple[0], "");
+      }
     }
   }
 
