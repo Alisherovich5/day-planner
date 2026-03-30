@@ -27,6 +27,9 @@ const LOW_WORDS = ["oddiy", "past", "sekin", "unchalik muhim emas", "minor"];
 
 // Russian/Uzbek number words → digits (voice recognition returns these)
 const NUMBER_WORDS: Record<string, number> = {
+  // English
+  "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+  "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
   // Russian
   "один": 1, "два": 2, "три": 3, "четыре": 4, "пять": 5, "шесть": 6,
   "семь": 7, "восемь": 8, "девять": 9, "десять": 10, "одиннадцать": 11, "двенадцать": 12,
@@ -55,6 +58,28 @@ function normalizeNumbers(text: string): string {
   result = result.replace(/через\s*полчаса/gi, "yarim soatdan keyin");
   // Russian priority: "важно/срочно" → muhim
   result = result.replace(/\b(важно|срочно|важная|срочная)\b/gi, "muhim");
+
+  // English: "at 7 o'clock" / "at 7" → "7 da"
+  result = result.replace(/at\s*(\d{1,2})(?:\s*o'?clock)?/gi, "$1 da");
+  // English: "from 7 to 9" / "since 9" / "until 9" → "7 dan 9 gacha"
+  result = result.replace(/from\s*(\d{1,2})\s*(?:to|till|until)\s*(\d{1,2})/gi, "$1 dan $2 gacha");
+  // "since/until/till 9" → endTime hint
+  result = result.replace(/(?:since|until|till)\s*(\d{1,2})/gi, "gacha $1");
+  // English: "in 5 minutes" → "5 minutdan keyin"
+  result = result.replace(/in\s*(\d+)\s*minutes?/gi, "$1 minutdan keyin");
+  // English: "in an hour" / "in 2 hours" → "X soatdan keyin"
+  result = result.replace(/in\s*an?\s*hour/gi, "1 soatdan keyin");
+  result = result.replace(/in\s*(\d+)\s*hours?/gi, "$1 soatdan keyin");
+  // English: "morning/afternoon/evening"
+  result = result.replace(/\b(morning)\b/gi, "ertalab");
+  result = result.replace(/\b(afternoon)\b/gi, "tushda");
+  result = result.replace(/\b(evening|tonight)\b/gi, "kechqurun");
+  // English priority: "important/urgent" → muhim
+  result = result.replace(/\b(important|urgent|critical)\b/gi, "muhim");
+  result = result.replace(/\b(minor|optional)\b/gi, "oddiy");
+  // English: "continuous since 9" → treat as endTime
+  result = result.replace(/continuous\s*(?:since|until|till)\s*(\d{1,2})/gi, "gacha $1");
+
   return result;
 }
 
@@ -268,6 +293,17 @@ export function parseTaskFromText(rawText: string, date: string): Task {
   if (!timeFound) {
     for (const w of EVENING_WORDS) {
       if (lower.includes(w)) { startH = 19; startM = 0; endH = 20; endM = 0; title = title.replace(new RegExp(w, "gi"), ""); timeFound = true; break; }
+    }
+  }
+
+  // ── "gacha X" — set endTime from leftover "gacha 9" ──
+  if (timeFound) {
+    const gachaMatch = title.match(/gacha\s*(\d{1,2})/i);
+    if (gachaMatch) {
+      const eh = parseInt(gachaMatch[1]);
+      endH = eh < 7 ? smartHour(eh) : eh;
+      endM = 0;
+      title = title.replace(gachaMatch[0], "");
     }
   }
 
