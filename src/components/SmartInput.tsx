@@ -43,13 +43,9 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
     setText(""); setPreview(null); setLoading(false);
   };
 
-  const stopRef = useRef(false);
-  const textRef = useRef("");
-
   const toggleVoice = () => {
     warmUpAudio();
     if (listening) {
-      stopRef.current = true;
       recRef.current?.stop();
       recRef.current = null;
       setListening(false);
@@ -58,64 +54,20 @@ export default function SmartInput({ date, onTaskCreated }: SmartInputProps) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
-    stopRef.current = false;
-    textRef.current = "";
+    const r = new SR();
+    r.lang = "ru-RU";
+    r.interimResults = true;
+    r.continuous = true;
 
-    const createRec = () => {
-      const r = new SR();
-      r.lang = "ru-RU";
-      r.interimResults = true;
-      r.continuous = true;
-
-      r.onresult = (e: SpeechRecognitionEvent) => {
-        let final = "";
-        let interim = "";
-        for (let i = 0; i < e.results.length; i++) {
-          const t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) final += t;
-          else interim += t;
-        }
-        if (final) textRef.current = final;
-        setText(textRef.current + interim);
-      };
-
-      r.onend = () => {
-        if (!stopRef.current) {
-          // Brauzer o'chirdi — yangi instance bilan qayta boshlash
-          setTimeout(() => {
-            if (!stopRef.current) {
-              const newR = createRec();
-              recRef.current = newR;
-              try { newR.start(); } catch { setListening(false); }
-            }
-          }, 100);
-        } else {
-          setListening(false);
-          recRef.current = null;
-        }
-      };
-
-      r.onerror = (ev: Event) => {
-        const err = ev as ErrorEvent;
-        // "no-speech" xatosida qayta urinish
-        if (!stopRef.current && err.message !== "aborted") {
-          setTimeout(() => {
-            if (!stopRef.current) {
-              const newR = createRec();
-              recRef.current = newR;
-              try { newR.start(); } catch { setListening(false); }
-            }
-          }, 300);
-        } else if (stopRef.current) {
-          setListening(false);
-          recRef.current = null;
-        }
-      };
-
-      return r;
+    r.onresult = (e: SpeechRecognitionEvent) => {
+      let t = "";
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setText(t);
     };
 
-    const r = createRec();
+    r.onend = () => { setListening(false); recRef.current = null; };
+    r.onerror = () => { setListening(false); recRef.current = null; };
+
     recRef.current = r;
     try { r.start(); setListening(true); } catch { setListening(false); }
   };
