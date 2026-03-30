@@ -120,7 +120,7 @@ export default function Home() {
         if (!task.completed && !task.notified && task.startTime <= ct) {
           playAlarmSound();
           if (Notification.permission === "granted") {
-            new Notification("Eslatma", { body: `${task.title} — ${task.startTime}`, tag: task.id, requireInteraction: true });
+            new Notification(t("reminder"), { body: `${task.title}\n${task.startTime} — ${task.endTime}`, tag: task.id, requireInteraction: true });
           }
           await updateTaskAsync(user.id, task.id, { notified: true });
           setNotifications((p) => [...p, task]);
@@ -272,9 +272,9 @@ export default function Home() {
 
           <NotificationBanner />
 
-          {/* Smart Input — only for today and future */}
+          {/* Smart Input — hidden (display:none), activate when needed */}
           {!isPast && (
-            <div className="mb-4">
+            <div className="mb-4" style={{ display: "none" }}>
               <SmartInput date={currentDate} onTaskCreated={smartAdd} />
             </div>
           )}
