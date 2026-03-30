@@ -1,26 +1,121 @@
-export type SoundName = "radar" | "beacon" | "chime" | "marimba" | "piano";
+let audioContext: AudioContext | null = null;
+let warmedUp = false;
 
-export const SOUNDS: { id: SoundName; file: string; label: Record<string, string> }[] = [
-  { id: "radar", file: "/sounds/radar.mp3", label: { uz: "Radar", ru: "Радар", en: "Radar" } },
-  { id: "beacon", file: "/sounds/beacon.mp3", label: { uz: "Beacon", ru: "Маяк", en: "Beacon" } },
-  { id: "chime", file: "/sounds/chime.mp3", label: { uz: "Qo'ng'iroq", ru: "Колокольчик", en: "Chime" } },
-  { id: "marimba", file: "/sounds/marimba.mp3", label: { uz: "Marimba", ru: "Маримба", en: "Marimba" } },
-  { id: "piano", file: "/sounds/piano.mp3", label: { uz: "Piano", ru: "Пианино", en: "Piano" } },
-];
-
-let audioEl: HTMLAudioElement | null = null;
-
-export function warmUpAudio(): void {
-  // Create audio element on first user gesture
-  if (!audioEl && typeof window !== "undefined") {
-    audioEl = new Audio();
-    audioEl.volume = 1.0;
-  }
+function getCtx(): AudioContext {
+  if (!audioContext) audioContext = new AudioContext();
+  return audioContext;
 }
 
+export function warmUpAudio(): void {
+  if (warmedUp) return;
+  try {
+    const ctx = getCtx();
+    if (ctx.state === "suspended") ctx.resume();
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(ctx.destination); src.start(0);
+    warmedUp = true;
+  } catch { /* */ }
+}
+
+function note(ctx: AudioContext, dest: AudioNode, freq: number, time: number, dur: number, vol: number, type: OscillatorType = "sine") {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(vol, time + 0.005);
+  gain.gain.exponentialRampToValueAtTime(vol * 0.3, time + dur * 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  osc.connect(gain); gain.connect(dest);
+  osc.start(time); osc.stop(time + dur + 0.05);
+}
+
+function playMarimba(ctx: AudioContext, master: GainNode, now: number) {
+  [0, 1.4].forEach((off) => {
+    [{ f: 523, t: 0 }, { f: 659, t: 0.15 }, { f: 784, t: 0.3 }, { f: 1047, t: 0.45 }].forEach(({ f, t }) => {
+      note(ctx, master, f, now + off + t, 0.5, 0.45);
+    });
+  });
+}
+
+function playChime(ctx: AudioContext, master: GainNode, now: number) {
+  [0, 1.2, 2.4].forEach((off) => {
+    [{ f: 1175, t: 0 }, { f: 1480, t: 0.2 }, { f: 1760, t: 0.4 }].forEach(({ f, t }) => {
+      note(ctx, master, f, now + off + t, 0.3, 0.5);
+      note(ctx, master, f * 2, now + off + t, 0.2, 0.1);
+    });
+  });
+}
+
+function playPiano(ctx: AudioContext, master: GainNode, now: number) {
+  [0, 1.6].forEach((off) => {
+    [{ f: 262, t: 0 }, { f: 330, t: 0.08 }, { f: 392, t: 0.16 }, { f: 523, t: 0.24 }].forEach(({ f, t }) => {
+      note(ctx, master, f, now + off + t, 0.8, 0.35, "sine");
+      note(ctx, master, f * 0.5, now + off + t, 0.6, 0.15, "triangle");
+    });
+  });
+}
+
+function playBirds(ctx: AudioContext, master: GainNode, now: number) {
+  [0, 0.8, 1.6].forEach((off) => {
+    [{ f: 1800, t: 0, d: 0.08 }, { f: 2200, t: 0.1, d: 0.06 }, { f: 2600, t: 0.18, d: 0.1 }, { f: 2000, t: 0.3, d: 0.12 }].forEach(({ f, t, d }) => {
+      note(ctx, master, f, now + off + t, d, 0.3);
+    });
+  });
+}
+
+function playZen(ctx: AudioContext, master: GainNode, now: number) {
+  [0, 2].forEach((off) => {
+    note(ctx, master, 220, now + off, 2, 0.3, "sine");
+    note(ctx, master, 440, now + off + 0.1, 1.5, 0.15, "sine");
+    note(ctx, master, 660, now + off + 0.2, 1, 0.08, "triangle");
+  });
+}
+
+// Real MP3 sounds
+function playMp3(file: string) {
+  const audio = new Audio(file);
+  audio.volume = 1.0;
+  let count = 0;
+  const once = () => {
+    count++;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    if (count < 3) audio.onended = () => setTimeout(once, 400);
+  };
+  once();
+}
+
+function previewMp3(file: string) {
+  const audio = new Audio(file);
+  audio.volume = 1.0;
+  audio.play().catch(() => {});
+}
+
+export type SoundName = "marimba" | "chime" | "piano" | "birds" | "zen" | "radar" | "beacon" | "bell" | "marimba-real" | "piano-real";
+
+export const SOUNDS: { id: SoundName; label: Record<string, string>; type: "synth" | "mp3"; file?: string }[] = [
+  // Synthesized
+  { id: "marimba", label: { uz: "Marimba", ru: "Маримба", en: "Marimba" }, type: "synth" },
+  { id: "chime", label: { uz: "Qo'ng'iroq", ru: "Колокольчик", en: "Chime" }, type: "synth" },
+  { id: "piano", label: { uz: "Piano", ru: "Пианино", en: "Piano" }, type: "synth" },
+  { id: "birds", label: { uz: "Qushlar", ru: "Птицы", en: "Birds" }, type: "synth" },
+  { id: "zen", label: { uz: "Zen", ru: "Дзен", en: "Zen" }, type: "synth" },
+  // Real MP3
+  { id: "radar", label: { uz: "Radar", ru: "Радар", en: "Radar" }, type: "mp3", file: "/sounds/radar.mp3" },
+  { id: "beacon", label: { uz: "Beacon", ru: "Маяк", en: "Beacon" }, type: "mp3", file: "/sounds/beacon.mp3" },
+  { id: "bell", label: { uz: "Bell", ru: "Звонок", en: "Bell" }, type: "mp3", file: "/sounds/chime.mp3" },
+  { id: "marimba-real", label: { uz: "Marimba+", ru: "Маримба+", en: "Marimba+" }, type: "mp3", file: "/sounds/marimba.mp3" },
+  { id: "piano-real", label: { uz: "Piano+", ru: "Пианино+", en: "Piano+" }, type: "mp3", file: "/sounds/piano.mp3" },
+];
+
+const synthPlayers: Record<string, (ctx: AudioContext, m: GainNode, n: number) => void> = {
+  marimba: playMarimba, chime: playChime, piano: playPiano, birds: playBirds, zen: playZen,
+};
+
 export function getSelectedSound(): SoundName {
-  if (typeof window === "undefined") return "radar";
-  return (localStorage.getItem("flowday-sound") as SoundName) || "radar";
+  if (typeof window === "undefined") return "marimba";
+  return (localStorage.getItem("flowday-sound") as SoundName) || "marimba";
 }
 
 export function setSelectedSound(s: SoundName): void {
@@ -28,36 +123,33 @@ export function setSelectedSound(s: SoundName): void {
 }
 
 export function playAlarmSound(soundOverride?: SoundName): void {
-  try {
-    const s = soundOverride || getSelectedSound();
-    const sound = SOUNDS.find(x => x.id === s) || SOUNDS[0];
+  const s = soundOverride || getSelectedSound();
+  const def = SOUNDS.find(x => x.id === s);
+  if (!def) return;
 
-    // Use Audio element — works on mobile + desktop
-    const audio = new Audio(sound.file);
-    audio.volume = 1.0;
-
-    // Play 3 times with pause
-    let count = 0;
-    const playOnce = () => {
-      count++;
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-      if (count < 3) {
-        audio.onended = () => {
-          setTimeout(playOnce, 400);
-        };
-      }
-    };
-    playOnce();
-  } catch {
-    // Silent fallback
+  if (def.type === "mp3" && def.file) {
+    playMp3(def.file);
+  } else {
+    try {
+      const ctx = getCtx();
+      if (ctx.state === "suspended") ctx.resume();
+      const master = ctx.createGain();
+      master.gain.value = 0.8;
+      master.connect(ctx.destination);
+      const fn = synthPlayers[s];
+      if (fn) fn(ctx, master, ctx.currentTime);
+    } catch { /* */ }
   }
 }
 
 export function previewSound(s: SoundName): void {
   warmUpAudio();
-  const sound = SOUNDS.find(x => x.id === s) || SOUNDS[0];
-  const audio = new Audio(sound.file);
-  audio.volume = 1.0;
-  audio.play().catch(() => {});
+  const def = SOUNDS.find(x => x.id === s);
+  if (!def) return;
+
+  if (def.type === "mp3" && def.file) {
+    previewMp3(def.file);
+  } else {
+    playAlarmSound(s);
+  }
 }
