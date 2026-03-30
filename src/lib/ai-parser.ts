@@ -59,26 +59,28 @@ function normalizeNumbers(text: string): string {
   // Russian priority: "важно/срочно" → muhim
   result = result.replace(/\b(важно|срочно|важная|срочная)\b/gi, "muhim");
 
-  // English: "at 7 o'clock" / "at 7" → "7 da"
-  result = result.replace(/at\s*(\d{1,2})(?:\s*o'?clock)?/gi, "$1 da");
-  // English: "from 7 to 9" / "since 9" / "until 9" → "7 dan 9 gacha"
+  // English: "at 7:00 o'clock" / "at 7 o'clock" / "at 7" → "7 da" or "7:00 da"
+  result = result.replace(/at\s*(\d{1,2}:\d{2})\s*(?:o'?clock)?/gi, "$1 da");
+  result = result.replace(/at\s*(\d{1,2})\s*(?:o'?clock)?/gi, "$1 da");
+  // English: "from 7 to 9" → "7 dan 9 gacha"
   result = result.replace(/from\s*(\d{1,2})\s*(?:to|till|until)\s*(\d{1,2})/gi, "$1 dan $2 gacha");
-  // "since/until/till 9" → endTime hint
-  result = result.replace(/(?:since|until|till)\s*(\d{1,2})/gi, "gacha $1");
+  // "continuous since/science/till/until 9" → endTime (voice often says "science" instead of "since")
+  result = result.replace(/continuous\s*(?:since|science|until|till)\s*(\d{1,2})/gi, "gacha $1");
+  // "since/science/until/till 9" → endTime
+  result = result.replace(/(?:since|science|until|till)\s*(\d{1,2})/gi, "gacha $1");
   // English: "in 5 minutes" → "5 minutdan keyin"
   result = result.replace(/in\s*(\d+)\s*minutes?/gi, "$1 minutdan keyin");
-  // English: "in an hour" / "in 2 hours" → "X soatdan keyin"
   result = result.replace(/in\s*an?\s*hour/gi, "1 soatdan keyin");
   result = result.replace(/in\s*(\d+)\s*hours?/gi, "$1 soatdan keyin");
-  // English: "morning/afternoon/evening"
+  // English time words
   result = result.replace(/\b(morning)\b/gi, "ertalab");
   result = result.replace(/\b(afternoon)\b/gi, "tushda");
   result = result.replace(/\b(evening|tonight)\b/gi, "kechqurun");
-  // English priority: "important/urgent" → muhim
+  // English priority
   result = result.replace(/\b(important|urgent|critical)\b/gi, "muhim");
   result = result.replace(/\b(minor|optional)\b/gi, "oddiy");
-  // English: "continuous since 9" → treat as endTime
-  result = result.replace(/continuous\s*(?:since|until|till)\s*(\d{1,2})/gi, "gacha $1");
+  // Clean English noise words from title
+  result = result.replace(/\b(o'?clock|continuous|today|we have|and that|that)\b/gi, "");
 
   return result;
 }
